@@ -5,9 +5,6 @@ A Node.js + Express REST API for a trading journal application.
 Provides authentication, daily log management, trade management, and analytics endpoints.
 
 ---
-🖥 Frontend Repository:
-https://github.com/KaylaArnold/trading-journal-ui
-This API powers the Trading Journal React frontend application.
 
 ## 🚀 Features
 
@@ -120,6 +117,15 @@ http://localhost:3000
 ```
 
 ---
+
+## Architecture
+
+React (Frontend)
+        ↓
+Express API (Backend)
+        ↓
+PostgreSQL Database
+
 
 ## 🔗 Related Repository
 
