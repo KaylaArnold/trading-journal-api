@@ -1,117 +1,124 @@
-# Trading Journal UI
+# Trading Journal API
 
-A React + Vite frontend for the Trading Journal application.
+A Node.js + Express REST API for a trading journal application.
 
-This application allows users to log trades, edit daily notes, and analyze performance through dashboards and analytics tables.
+Provides authentication, daily log management, trade management, and analytics endpoints.
 
 ---
 
 ## 🚀 Features
 
 ### Authentication
-- Login screen
-- JWT stored in localStorage
-- Authorization header: `Bearer <token>`
+- Register
+- Login
+- JWT-based authentication
+- Password hashing (bcrypt)
 
-### Daily Logs Dashboard
-- Paginated list of daily logs
-- Click into individual log details
+Authorization header:
 
-### Daily Log Detail Page
-- View log (date + ticker)
-- Edit notes:
-  - Key Levels
-  - Feelings
-  - Reflections
-- Add trades
-- Delete trades
-- Trade table with:
-  - CALL / PUT badge
-  - GREEN / RED badge
-  - Strategy badge (ORB15 / ORB5 / 3CONF)
-  - Color-coded Profit/Loss
-  - Contracts column
-  - Drip % column
-  - Amount Leveraged column
+```
+Authorization: Bearer <token>
+```
 
-### Trade Edit Modal
-- Opens from trade row
-- Prefilled form fields
-- PATCH update to backend
-- UI refresh after save
+---
 
-### Analytics Page
-- Summary performance cards
-- Weekly breakdown table
-- Strategy performance table
-- Date filters (From / To)
-- Refresh button
+### Daily Logs
+- Create
+- Read
+- Update
+- Delete
+- Pagination support (`page`, `limit`)
+- Notes fields:
+  - keyLevels
+  - feelings
+  - reflections
 
-### Navigation / UX
-- React Router
-- Breadcrumb navigation
-- Clickable app title routes back to dashboard
-- Loading + error notices
+---
+
+### Trades
+- Create trade under daily log
+- Update trade (PATCH)
+- Delete trade
+- Optional metadata fields:
+  - optionType (CALL / PUT)
+  - outcomeColor (GREEN / RED)
+  - strategy (ORB15 / ORB5 / 3CONF)
+  - contractsCount
+  - dripPercent
+  - amountLeveraged
+
+---
+
+### Analytics
+- Summary totals (date range)
+- Weekly rollups
+- Strategy performance breakdown
+
+---
+
+### Validation
+- Zod request validation middleware
 
 ---
 
 ## 🛠 Tech Stack
 
-- React
-- Vite
-- React Router
-- Fetch API
-- Custom CSS styling
+- Node.js
+- Express
+- PostgreSQL
+- Prisma ORM
+- Zod
+- JWT
+- bcrypt
 
 ---
 
 ## 📂 Project Structure
 
 ```txt
-public/
+prisma/
+  migrations/
+
 src/
   api/
-  assets/
-  components/
-  pages/
+  controllers/
+  middleware/
+  routes/
+  utils/
+  validation/
 ```
 
 ---
 
-## 📸 Screenshots
+## ⚙️ Environment Variables
 
-### Dashboard
-![Dashboard](./screenshots/Dashboard.png)
+Create a `.env` file:
 
-### Daily Log
-![Daily Log](./screenshots/DailyLogDetail.png)
-
-### Analytics
-![Analytics](./screenshots/Analytics.png)
-
-### Edit Trade Modal
-![Edit Trade](./screenshots/TradeEditModal.png)
+```
+DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/trading_journal
+JWT_SECRET=your_secret_key
+PORT=3000
+```
 
 ---
 
-## ⚙️ Run Locally
+## 🧪 Run Locally
 
 ```bash
 npm install
+npx prisma migrate dev
 npm run dev
 ```
 
-The app runs at:
+Server runs at:
 
 ```
-http://localhost:5173
+http://localhost:3000
 ```
-
-Backend must be running separately.
 
 ---
 
 ## 🔗 Related Repository
 
-Backend API:
-https://github.com/KaylaArnold/trading-journal-api
+Frontend UI:
+https://github.com/KaylaArnold/trading-journal-ui
