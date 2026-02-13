@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+ 
+  dailyLogs DailyLog[]
+  trades Trade[]
+}
+
+model DailyLog {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  trades  Trade[]
+
+  date            DateTime
+  ticker          String
+  currentPrice    Decimal? @db.Decimal(12, 4)
+
+  pmh             Decimal? @db.Decimal(12, 4)
+  ydh             Decimal? @db.Decimal(12, 4)
+  pml             Decimal? @db.Decimal(12, 4)
+  ydl             Decimal? @db.Decimal(12, 4)
+
+  keyLevels       String?  // plain text, as you requested
+  premarketGaps   Boolean? // true = gaps present, false = no gaps
+
+  strategyOrb15   Boolean  @default(false)
+  strategyOrb5    Boolean  @default(false)
+  strategy3Conf   Boolean  @default(false)
+
+  waitedAPlus     Boolean? // yes/no
+  tradedInZone    Boolean? // yes/no
+  followedRules   Boolean? // yes/no
+
+  feelings        String?
+  reflections     String?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, date])
+  @@unique([userId, date, ticker])
+}
+
+model Trade {
+  id             String   @id @default(uuid())
+  userId         String
+  dailyLogId     String
+  user           User     @relation(fields: [userId], references: [id])
+  dailyLog       DailyLog @relation(fields: [dailyLogId], references: [id], onDelete: Cascade)
+
+  timeIn         String?
+  timeOut        String?
+
+  profitLoss     Decimal? @db.Decimal(12, 2)
+  dripPercent    Decimal? @db.Decimal(6, 2)
+  amountLeveraged Decimal? @db.Decimal(12, 2)
+
+  runner         Boolean  @default(false)
+  contractsCount Int?
+  optionType     String?  // "CALL" or "PUT"
+  outcomeColor   String?  // "GREEN" or "RED"
+  strategy       String?  // "ORB15", "ORB5", "3CONF", etc.
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([userId, dailyLogId])
+}
