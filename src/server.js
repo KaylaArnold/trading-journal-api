@@ -15,44 +15,32 @@ const app = express();
 
 /**
  * ✅ CORS Fix (Production + Local)
- * Set this on Render (backend service):
+ * On Render BACKEND service set:
  * FRONTEND_URL = https://trading-journal-ui-e3ac.onrender.com
  */
 const allowedOrigins = [
   process.env.FRONTEND_URL,
+  "https://trading-journal-ui-e3ac.onrender.com", // hardcode to avoid env mistakes
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ].filter(Boolean);
 
-app.use(
-  cors({
-    origin(origin, cb) {
-      // Allow requests with no Origin header (Postman, curl, server-to-server)
-      if (!origin) return cb(null, true);
-
-      if (allowedOrigins.includes(origin)) return cb(null, true);
-
-      return cb(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// ✅ Handle preflight for ALL routes
 const corsOptions = {
   origin(origin, cb) {
+    // allow server-to-server / curl / postman (no Origin header)
     if (!origin) return cb(null, true);
+
     if (allowedOrigins.includes(origin)) return cb(null, true);
+
     return cb(new Error(`CORS blocked for origin: ${origin}`));
   },
+  credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
-app.options(/.*/, cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 app.use(express.json());
 
@@ -61,9 +49,9 @@ app.get("/", (req, res) => {
   res.json({ ok: true, message: "Trading Journal API running" });
 });
 
-// ✅ Health check
+// ✅ Health check (add version so we can confirm deploy)
 app.get("/health", (req, res) => {
-  res.json({ ok: true });
+  res.json({ ok: true, corsFix: "v1" });
 });
 
 // Routes
