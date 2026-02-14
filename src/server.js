@@ -14,23 +14,25 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 
 /**
- * ✅ CORS Fix (Production + Local)
- * On Render BACKEND service set:
+ * ✅ CORS Configuration
+ * Make sure this is set on Render (backend service):
  * FRONTEND_URL = https://trading-journal-ui-e3ac.onrender.com
  */
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  "https://trading-journal-ui-e3ac.onrender.com", // hardcode to avoid env mistakes
+  "https://trading-journal-ui-e3ac.onrender.com", // hardcoded safety
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ].filter(Boolean);
 
 const corsOptions = {
   origin(origin, cb) {
-    // allow server-to-server / curl / postman (no Origin header)
+    // allow Postman / curl / server-to-server (no origin)
     if (!origin) return cb(null, true);
 
-    if (allowedOrigins.includes(origin)) return cb(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return cb(null, true);
+    }
 
     return cb(new Error(`CORS blocked for origin: ${origin}`));
   },
@@ -39,19 +41,27 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
 };
 
+// Apply CORS middleware
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
+
+// ✅ Safe preflight handler (avoids app.options("*") crash)
+app.use((req, res, next) => {
+  if (req.method === "OPTIONS") {
+    return cors(corsOptions)(req, res, next);
+  }
+  next();
+});
 
 app.use(express.json());
 
-// ✅ Root route so Render URL doesn't say "Cannot GET /"
+// Root route (Render check)
 app.get("/", (req, res) => {
   res.json({ ok: true, message: "Trading Journal API running" });
 });
 
-// ✅ Health check (add version so we can confirm deploy)
+// Health route (useful for testing deploy)
 app.get("/health", (req, res) => {
-  res.json({ ok: true, corsFix: "v1" });
+  res.json({ ok: true, version: "cors-fixed" });
 });
 
 // Routes
@@ -62,11 +72,12 @@ app.use("/", analyticsRoutes);
 app.use("/", analyticsStrategiesRoutes);
 app.use("/", analyticsWeeklyRoutes);
 
-// Error handler (last)
+// Global error handler (must be last)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
   console.log(`API running on port ${PORT}`);
-  console.log("Allowed CORS origins:", allowedOrigins);
+  console.log("Allowed origins:", allowedOrigins);
 });
