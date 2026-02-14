@@ -18,28 +18,11 @@ const app = express();
  * Make sure this is set on Render (backend service):
  * FRONTEND_URL = https://trading-journal-ui-e3ac.onrender.com
  */
-const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  "https://trading-journal-ui-e3ac.onrender.com", // hardcoded safety
-  "http://localhost:5173",
-  "http://127.0.0.1:5173",
-].filter(Boolean);
-
 const corsOptions = {
-  origin(origin, cb) {
-    // allow Postman / curl / server-to-server (no origin)
-    if (!origin) return cb(null, true);
-
-    if (allowedOrigins.includes(origin)) {
-      return cb(null, true);
-    }
-
-    return cb(new Error(`CORS blocked for origin: ${origin}`));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  origin: true, // reflect request origin
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-};
+}  
 
 // Apply CORS middleware
 app.use(cors(corsOptions));
@@ -47,7 +30,7 @@ app.use(cors(corsOptions));
 // ✅ Safe preflight handler (avoids app.options("*") crash)
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") {
-    return cors(corsOptions)(req, res, next);
+    return res.sendStatus(204);
   }
   next();
 });
