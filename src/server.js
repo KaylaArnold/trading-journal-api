@@ -13,7 +13,36 @@ const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
-app.use(cors());
+/**
+ * ✅ CORS Fix (Production + Local)
+ * Set this on Render (backend service):
+ * FRONTEND_URL = https://trading-journal-ui-e3ac.onrender.com
+ */
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin(origin, cb) {
+      // Allow requests with no Origin header (Postman, curl, server-to-server)
+      if (!origin) return cb(null, true);
+
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+
+      return cb(new Error(`CORS blocked for origin: ${origin}`));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
+
+// ✅ Handle preflight for ALL routes
+app.options("*", cors());
+
 app.use(express.json());
 
 // ✅ Root route so Render URL doesn't say "Cannot GET /"
@@ -21,7 +50,7 @@ app.get("/", (req, res) => {
   res.json({ ok: true, message: "Trading Journal API running" });
 });
 
-// ✅ Health check (keep only one)
+// ✅ Health check
 app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
@@ -40,4 +69,5 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`API running on port ${PORT}`);
+  console.log("Allowed CORS origins:", allowedOrigins);
 });
