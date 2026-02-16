@@ -13,9 +13,9 @@ const errorHandler = require("./middleware/errorHandler");
 
 const app = express();
 
-// ===== CORS (TEMP: allow any origin via reflection) =====
+// ===== CORS =====
 const corsOptions = {
-  origin: true, // ✅ reflect request Origin
+  origin: true, // reflect request origin
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
@@ -23,7 +23,7 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// ✅ Always respond to preflight quickly (no app.options("*") crash)
+// Handle preflight safely
 app.use((req, res, next) => {
   if (req.method === "OPTIONS") return res.sendStatus(204);
   next();
@@ -38,21 +38,52 @@ app.get("/", (req, res) => {
 
 // Health route
 app.get("/health", (req, res) => {
-  res.json({ ok: true, version: "cors-reflect-temp" });
+  res.json({ ok: true, version: "debug-route-types" });
 });
 
-// Routes
-app.use("/auth", authRoutes);
-app.use("/", dailyLogRoutes);
-app.use("/trades", tradeRoutes);
-app.use("/", analyticsRoutes);
-app.use("/", analyticsStrategiesRoutes);
-app.use("/", analyticsWeeklyRoutes);
+// ===== DEBUG: identify broken route imports =====
+function logRouteType(name, mod) {
+  console.log(`[routes] ${name}:`, typeof mod);
+  if (typeof mod !== "function") {
+    console.log(
+      `[routes] ⚠️ ${name} is NOT a function. This will break app.use. Check that file exports "module.exports = router" and the require path is correct.`
+    );
+  }
+}
 
-// Error handler (last)
+logRouteType("authRoutes", authRoutes);
+logRouteType("dailyLogRoutes", dailyLogRoutes);
+logRouteType("tradeRoutes", tradeRoutes);
+logRouteType("analyticsRoutes", analyticsRoutes);
+logRouteType("analyticsStrategiesRoutes", analyticsStrategiesRoutes);
+logRouteType("analyticsWeeklyRoutes", analyticsWeeklyRoutes);
+
+// ===== Routes (mount only if valid) =====
+function safeUse(path, mod, name) {
+  if (typeof mod !== "function") return; // skip broken route to prevent crash
+  app.use(path, mod);
+  console.log(`[routes] mounted ${name} at "${path}"`);
+}
+
+safeUse("/auth", authRoutes, "authRoutes");
+
+// dailyLogs.routes.js already defines "/daily-logs"
+safeUse("/", dailyLogRoutes, "dailyLogRoutes");
+
+// trades.routes.js should define "/" and "/:id"
+safeUse("/trades", tradeRoutes, "tradeRoutes");
+
+safeUse("/", analyticsRoutes, "analyticsRoutes");
+safeUse("/", analyticsStrategiesRoutes, "analyticsStrategiesRoutes");
+safeUse("/", analyticsWeeklyRoutes, "analyticsWeeklyRoutes");
+
+// Error handler (must be last)
 app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`API running on port ${PORT}`);
 });
+
+// ✅ Correct export (NOT router)
+module.exports = app;
