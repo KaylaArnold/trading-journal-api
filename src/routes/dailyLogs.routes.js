@@ -1,3 +1,17 @@
+const express = require("express");
+const prisma = require("../prisma");
+const requireAuth = require("../middleware/requireAuth");
+const validate = require("../middleware/validate");
+
+const { uuidParam } = require("../validation/common");
+const {
+  dailyLogCreateSchema,
+  dailyLogUpdateSchema,
+  dailyLogListQuerySchema,
+} = require("../validation/dailyLog.schema");
+
+const router = express.Router();
+
 // POST /daily-logs/:id/trades  (create trade)
 router.post(
   "/daily-logs/:id/trades",
