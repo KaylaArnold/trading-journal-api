@@ -14,11 +14,24 @@ const errorHandler = require("./middleware/errorHandler");
 const app = express();
 
 // ===== CORS =====
+const allowedOrigins = [
+  "http://localhost:5173", // local dev (Vite)
+  "https://trading-journal-ui-e3ac.onrender.com", // deployed UI
+];
+
+
 const corsOptions = {
-  origin: true, // reflect request origin
+  origin: function (origin, callback) { // reflect request origin
+    // allow non-browser tools (Thunder Client, curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error("CORS not allowed"));
+   }
+  },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
