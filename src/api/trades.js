@@ -1,19 +1,52 @@
 import api from "./client";
 
-// Update an existing trade
+function toUpperOrNull(v) {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s ? s.toUpperCase() : null;
+}
+
+function toNumberOrNull(v) {
+  if (v == null) return null;
+  if (typeof v === "number") return Number.isFinite(v) ? v : null;
+  const s = String(v).trim();
+  if (!s) return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+function toStringOrNull(v) {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s ? s : null;
+}
+
 export async function patchTrade(tradeId, body) {
-  const res = await api.patch(`/trades/${tradeId}`, body);
-  return res.data?.trade ?? res.data;
-}
+  // Only send fields your API expects, with correct types
+  const payload = {
+    timeIn: toStringOrNull(body.timeIn),
+    timeOut: toStringOrNull(body.timeOut),
 
-// (Optional) Create trade under a daily log (use this if you want a helper)
-export async function createTrade(dailyLogId, payload) {
-  const res = await api.post(`/daily-logs/${dailyLogId}/trades`, payload);
-  return res.data?.trade ?? res.data;
-}
+    // Pick ONE based on your backend schema:
+    // If your backend expects Decimal-as-string: use String
+    // If your backend expects number: use toNumberOrNull
+    profitLoss: body.profitLoss === "" ? null : String(body.profitLoss),
 
-// (Optional) Delete trade
-export async function deleteTrade(tradeId) {
-  const res = await api.delete(`/trades/${tradeId}`);
-  return res.data;
+    runner: !!body.runner,
+    optionType: toUpperOrNull(body.optionType),
+    outcomeColor: toUpperOrNull(body.outcomeColor),
+    strategy: toUpperOrNull(body.strategy),
+
+    contractsCount: toNumberOrNull(body.contractsCount),
+    dripPercent: toNumberOrNull(body.dripPercent),
+    amountLeveraged: toNumberOrNull(body.amountLeveraged),
+  };
+
+  // Remove null/undefined keys if your Zod schema disallows nulls
+  Object.keys(payload).forEach((k) => {
+    if (payload[k] === undefined) delete payload[k];
+  });
+
+  const res = await api.patch(`/trades/${tradeId}`, payload);
+  return res.data?.trade ?? res.data;
 }
