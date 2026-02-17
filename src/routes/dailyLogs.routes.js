@@ -249,26 +249,24 @@ router.post(
 
       const trade = await prisma.trade.create({
         data: {
+          userId,       // add this
           dailyLogId,
           timeIn,
           timeOut,
-          profitLoss: Number(profitLoss),
+
+          // If profitLoss is Decimal in Prisma, string is safest;
+          profitLoss: String(profitLoss),
+
           runner: !!runner,
           optionType,
           outcomeColor,
           strategy,
           contractsCount:
-            contractsCount === "" || contractsCount == null
-              ? null
-              : Number(contractsCount),
+            contractsCount === "" || contractsCount == null ? null : Number(contractsCount),
           dripPercent:
-            dripPercent === "" || dripPercent == null
-              ? null
-              : Number(dripPercent),
+            dripPercent === "" || dripPercent == null ? null : Number(dripPercent),
           amountLeveraged:
-            amountLeveraged === "" || amountLeveraged == null
-              ? null
-              : Number(amountLeveraged),
+            amountLeveraged === "" || amountLeveraged == null ? null : Number(amountLeveraged),
         },
       });
 
