@@ -1,23 +1,19 @@
-const API_BASE = "http://localhost:3000";
+import api from "./client";
 
+// Update an existing trade
 export async function patchTrade(tradeId, body) {
-  const token = localStorage.getItem("token");
-
-  const res = await fetch(`${API_BASE}/trades/${tradeId}`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(body),
-  });
-
-  const data = await res.json().catch(() => null);
-
-  if (!res.ok) {
-    throw new Error(data?.error || `Request failed (${res.status})`);
-  }
-
-  return data.trade ?? data;
+  const res = await api.patch(`/trades/${tradeId}`, body);
+  return res.data?.trade ?? res.data;
 }
 
+// (Optional) Create trade under a daily log (use this if you want a helper)
+export async function createTrade(dailyLogId, payload) {
+  const res = await api.post(`/daily-logs/${dailyLogId}/trades`, payload);
+  return res.data?.trade ?? res.data;
+}
+
+// (Optional) Delete trade
+export async function deleteTrade(tradeId) {
+  const res = await api.delete(`/trades/${tradeId}`);
+  return res.data;
+}
