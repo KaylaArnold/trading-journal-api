@@ -4,8 +4,11 @@ Production-ready REST API powering the Trading Journal application.
 
 Built with Node.js, Express, PostgreSQL, and Prisma, this API enforces strict authentication, ownership validation, and structured input validation.
 
-Frontend repository:
-👉 https://github.com/KaylaArnold/trading-journal-ui
+Frontend repository: https://github.com/KaylaArnold/trading-journal-ui
+
+Base URL: https://trading-journal-api-qya8.onrender.com
+
+Health: https://trading-journal-api-qya8.onrender.com/health
 
 🏗 Architecture
 Core Stack
