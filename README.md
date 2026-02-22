@@ -1,262 +1,220 @@
-🔐 Trading Journal — Secure REST API
+# 🔐 Trading Journal — Secure REST API
 
-Production-ready REST API powering the Trading Journal application.
+Production-grade REST API powering a full-stack Trading Journal application.
 
-Built with Node.js, Express, PostgreSQL, and Prisma, this API enforces strict authentication, ownership validation, and structured input validation.
+Built with **Node.js, Express, PostgreSQL, and Prisma**, this API enforces strict JWT authentication, ownership validation at the query layer, and structured server-side validation.
 
-Frontend repository: https://github.com/KaylaArnold/trading-journal-ui
+Frontend repository:  
+https://github.com/KaylaArnold/trading-journal-ui  
 
-Base URL: https://trading-journal-api-qya8.onrender.com
+**Base URL:**  
+https://trading-journal-api-qya8.onrender.com  
 
-Health: https://trading-journal-api-qya8.onrender.com/health
+**Health Check:**  
+https://trading-journal-api-qya8.onrender.com/health  
 
-🏗 Architecture
-Core Stack
+---
 
-Node.js
+# 🏗 Architecture
 
-Express
+## Tech Stack
 
-PostgreSQL
+- Node.js
+- Express
+- PostgreSQL
+- Prisma ORM
+- Zod validation
+- JWT authentication
 
-Prisma ORM
+## Architectural Principles
 
-Zod validation
+- Separation of concerns (routes, middleware, validation, DB)
+- Middleware-driven request lifecycle
+- Ownership enforcement at the database query layer
+- Environment-based configuration
+- Centralized error handling
+- Production-safe CORS configuration
 
-JWT authentication
+---
 
-Architectural Principles
+# 🧠 Request Lifecycle
 
-Separation of concerns (routes, middleware, validation, DB layer)
+1. Request enters Express
+2. CORS validation
+3. `requireAuth` verifies JWT (if protected)
+4. Zod validates request body/params/query
+5. Prisma executes **user-scoped query**
+6. Structured JSON response returned
+7. Centralized error handler processes failures
 
-Middleware-driven request lifecycle
+---
 
-Ownership enforcement at query layer
+# 🔐 Security Model
 
-Environment-based configuration
+## Authentication
 
-Centralized error handling
-
-Production-aware CORS configuration
-
-🧠 Request Lifecycle
-
-Request enters Express
-
-CORS validated
-
-requireAuth verifies JWT (if protected route)
-
-Zod validates request body/params/query
-
-Prisma executes user-scoped database query
-
-Structured JSON response returned
-
-Centralized error handler catches failures
-
-🔐 Security Design
-1️⃣ Authentication
-
-JWT-based authentication
-
-Tokens are:
-
-Signed server-side using JWT_SECRET
-
-Verified on every protected request
-
-Time-limited (expire automatically)
+- Stateless JWT authentication
+- Tokens signed using `JWT_SECRET`
+- Verified on every protected request
+- Time-limited (automatic expiration)
 
 Protected routes require:
 
+```
 Authorization: Bearer <token>
+```
 
-2️⃣ Authorization / Ownership Enforcement (Critical)
+---
+
+## Authorization & Ownership Enforcement
 
 All data access is scoped to the authenticated user.
 
-Example pattern:
+Example query pattern:
 
+```js
 where: { id, userId }
-
+```
 
 This prevents:
 
-Horizontal privilege escalation
+- Horizontal privilege escalation
+- Cross-user data access
+- Unauthorized updates or deletes
 
-Cross-user data access
+Ownership enforcement is implemented at the **database query layer**, not the UI.
 
-Unauthorized modification
+---
 
-Unauthorized deletion
+## Input Validation (Zod)
 
-Security is enforced at the database query level — not just in UI logic.
-
-3️⃣ Input Validation (Zod)
-
-All requests are validated server-side before hitting the database.
+All inputs validated server-side before database access.
 
 Examples:
-
-Time format enforcement (H:MM / HH:MM)
-
-Numeric coercion
-
-Enum normalization
-
-Empty PATCH prevention
-
-UUID parameter validation
+- Time format enforcement (H:MM / HH:MM)
+- Numeric coercion
+- Enum normalization
+- Empty PATCH prevention
+- UUID parameter validation
 
 Invalid requests return structured errors:
 
+```json
 {
   "error": "VALIDATION_ERROR",
   "issues": [
     { "path": "timeIn", "message": "Use H:MM or HH:MM" }
   ]
 }
+```
 
+No stack traces or raw Prisma errors are exposed in production.
 
-No raw Prisma or stack traces are exposed in production responses.
+---
 
-🗄 Database Design
-Entities
+# 🗄 Database Design
 
-users
+## Entities
 
-dailyLogs
+- users
+- dailyLogs
+- trades
 
-trades
+## Relationships
 
-Relationships
+- User → many DailyLogs
+- DailyLog → many Trades
+- Trade → belongs to User
+- Trade → belongs to DailyLog
 
-A User has many Daily Logs
+Dual linkage enables strict relational integrity and ownership validation.
 
-A Daily Log has many Trades
+---
 
-A Trade belongs to a User
+# 🧱 REST Resource Design
 
-A Trade belongs to a Daily Log
+## Auth
 
-This dual linkage enables strict ownership validation and relational integrity.
-
-🧱 REST Resource Design
-Auth
+```
 POST /auth/register
 POST /auth/login
+```
 
-Daily Logs
+## Daily Logs
+
+```
 POST   /daily-logs
 GET    /daily-logs
 GET    /daily-logs/:id
 PUT    /daily-logs/:id
 DELETE /daily-logs/:id
+```
 
-Trades
+## Trades
+
+```
 POST   /daily-logs/:id/trades
 PATCH  /trades/:tradeId
 DELETE /trades/:tradeId
+```
 
+Nested trade creation ensures relational clarity and scoped ownership.
 
-Nested trade creation ensures clarity of ownership and proper relational scoping.
+---
 
-🌍 Deployment
+# 🌍 Deployment
 
-Deployed on Render Web Service
+- Deployed on Render Web Service
+- Prisma migrations executed during deploy
+- Secrets managed via environment variables
+- CORS restricted to approved origins
+- `.env` excluded via `.gitignore`
 
-Prisma migrations run during deploy
+---
 
-Environment variables injected securely
+# ⚙️ Environment Variables
 
-CORS restricted to approved origins
+Local `.env`:
 
-No secrets committed to repository
-
-⚙️ Environment Variables
-
-Create a .env file locally:
-
+```
 DATABASE_URL=
 JWT_SECRET=
 PORT=3000
+```
 
+Production secrets configured via Render dashboard.
 
-Production secrets are configured via Render environment settings.
+---
 
-.env is excluded via .gitignore.
+# 🛡 CORS Strategy
 
-🛡 CORS Strategy
-
-Allows approved frontend origins
-
-Reflects request origin when valid
-
-Allows requests without Origin header (Postman / Thunder Client)
-
-Supports credentials and Authorization headers
+- Allows approved frontend origins
+- Reflects valid request origin when valid
+- Allows no-Origin requests (Postman / Thunder Client)
+- Supports credentials and Authorization headers
 
 Designed to balance browser security with API testing flexibility.
 
-🐞 Production Debugging Case Study
+---
 
-During deployment, trade creation initially failed due to:
+# 🧩 Engineering Decisions
 
-Incorrect route mounting
+- Middleware-first architecture
+- Ownership enforcement embedded in queries
+- Nested REST structure for relational clarity
+- Centralized validation and error handling
+- Structured JSON error responses
+- Production-aware CORS configuration
 
-Router export misconfiguration
+---
 
-Frontend calling outdated endpoint
+# 🔮 Future Improvements
 
-JWT expiration handling
-
-Nested REST route mismatch
-
-Resolved by:
-
-Inspecting network requests in browser dev tools
-
-Testing endpoints directly via Thunder Client
-
-Verifying Express router exports
-
-Correcting nested REST route definitions
-
-Redeploying frontend + backend together
-
-This reinforced the importance of environment parity and route consistency across services.
-
-🧩 Notable Engineering Decisions
-
-Nested REST structure for relational clarity
-
-Middleware-first architecture
-
-Centralized validation layer
-
-Ownership enforcement embedded in query layer
-
-Explicit environment-based configuration
-
-Structured JSON error responses
-
-Secure production CORS configuration
-
-🔮 Future Improvements
-
-Refresh token rotation
-
-Rate limiting middleware
-
-Role-based access control (RBAC)
-
-Structured logging (Winston / Pino)
-
-Unit testing (Jest)
-
-CI/CD pipeline
-
-Docker containerization
-
-API documentation via OpenAPI/Swagger
+- Refresh token rotation
+- Rate limiting
+- Role-Based Access Control (RBAC)
+- Structured logging (Pino / Winston)
+- Unit testing (Jest)
+- CI/CD pipeline
+- Docker containerization
+- OpenAPI / Swagger documentation
