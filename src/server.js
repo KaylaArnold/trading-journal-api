@@ -1,7 +1,7 @@
-import "dotenv/config":
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
-require("dotenv").config();
 
 const dailyLogRoutes = require("./routes/dailyLogs.routes");
 const tradeRoutes = require("./routes/trades.routes");
@@ -9,6 +9,7 @@ const authRoutes = require("./routes/auth.routes");
 const analyticsRoutes = require("./routes/analytics.routes");
 const analyticsStrategiesRoutes = require("./routes/analytics.strategies.routes");
 const analyticsWeeklyRoutes = require("./routes/analytics.weekly.routes");
+const aiRoutes = require("./routes/ai.routes");
 
 const errorHandler = require("./middleware/errorHandler");
 
@@ -16,33 +17,26 @@ const app = express();
 
 // ===== CORS =====
 const allowedOrigins = [
-  "http://localhost:5173", // local dev (Vite)
-  "https://trading-journal-ui-e3ac.onrender.com", // deployed UI
+  "http://localhost:5173",
+  "https://trading-journal-ui-e3ac.onrender.com",
 ];
 
-
 const corsOptions = {
-  origin: function (origin, callback) { // reflect request origin
-    // allow non-browser tools (Thunder Client, curl)
+  origin: function (origin, callback) {
     if (!origin) return callback(null, true);
 
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
-    } else {
-      return callback(new Error("CORS not allowed"));
-   }
+    }
+
+    return callback(new Error("CORS not allowed"));
   },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 };
 
 app.use(cors(corsOptions));
-
-// Handle preflight safely
-app.use((req, res, next) => {
-  if (req.method === "OPTIONS") return res.sendStatus(204);
-  next();
-});
-
 app.use(express.json());
 
 // Root route
@@ -60,7 +54,7 @@ function logRouteType(name, mod) {
   console.log(`[routes] ${name}:`, typeof mod);
   if (typeof mod !== "function") {
     console.log(
-      `[routes] ⚠️ ${name} is NOT a function. This will break app.use. Check that file exports "module.exports = router" and the require path is correct.`
+      `[routes] ⚠️ ${name} is NOT a function. Check module.exports = router and require path.`
     );
   }
 }
@@ -71,25 +65,22 @@ logRouteType("tradeRoutes", tradeRoutes);
 logRouteType("analyticsRoutes", analyticsRoutes);
 logRouteType("analyticsStrategiesRoutes", analyticsStrategiesRoutes);
 logRouteType("analyticsWeeklyRoutes", analyticsWeeklyRoutes);
+logRouteType("aiRoutes", aiRoutes);
 
 // ===== Routes (mount only if valid) =====
 function safeUse(path, mod, name) {
-  if (typeof mod !== "function") return; // skip broken route to prevent crash
+  if (typeof mod !== "function") return;
   app.use(path, mod);
   console.log(`[routes] mounted ${name} at "${path}"`);
 }
 
 safeUse("/auth", authRoutes, "authRoutes");
-
-// dailyLogs.routes.js already defines "/daily-logs"
 safeUse("/", dailyLogRoutes, "dailyLogRoutes");
-
-// trades.routes.js should define "/" and "/:id"
 safeUse("/trades", tradeRoutes, "tradeRoutes");
-
 safeUse("/", analyticsRoutes, "analyticsRoutes");
 safeUse("/", analyticsStrategiesRoutes, "analyticsStrategiesRoutes");
 safeUse("/", analyticsWeeklyRoutes, "analyticsWeeklyRoutes");
+safeUse("/ai", aiRoutes, "aiRoutes");
 
 // Error handler (must be last)
 app.use(errorHandler);
@@ -99,5 +90,4 @@ app.listen(PORT, () => {
   console.log(`API running on port ${PORT}`);
 });
 
-// ✅ Correct export (NOT router)
 module.exports = app;
